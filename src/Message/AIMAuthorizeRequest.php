@@ -4,6 +4,7 @@ namespace Omnipay\AuthorizeNet\Message;
 
 use Omnipay\Common\CreditCard;
 use Omnipay\Common\Exception\InvalidRequestException;
+use Omnipay\AuthorizeNet\Check;
 
 /**
  * Authorize.Net AIM Authorize Request
@@ -26,12 +27,59 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
     const DEVICE_TYPE_VIRTUAL_TERMINAL = '10';
 
     protected $action = 'authOnlyTransaction';
+    
+    public function initialize(array $parameters = array())
+    {
+        parent::initialize(array_merge(['tender'=>'C'], $parameters));
+        return $this;
+    }
+    
+    public function getTender()
+    {
+        return $this->getParameter('tender');
+    }
+    
+    public function setTender($value)
+    {
+        if ($this->getCard() == null){
+           $this->setParameter('tender', 'A');
+        } else {
+           $this->setParameter('tender', 'C');
+        }  
+    }
+     
+    /**
+     * Get the check.
+     *
+     * @return Check
+     */
+    public function getCheck()
+    {
+        return $this->getParameter('check');
+    }
+
+    /**
+     * Sets the check.
+     *
+     * @param Check $value
+     * @return $this
+     */
+    public function setCheck($value)
+    {
+        if ($value && !$value instanceof Check) {
+            $value = new Check($value);
+        }
+
+        return $this->setParameter('check', $value);
+    }
+
 
     public function getData()
     {
         $this->validate('amount');
         $data = $this->getBaseData();
         $data->transactionRequest->amount = $this->getAmount();
+        $data->$this->getTender();
         $this->addPayment($data);
         $this->addSolutionId($data);
         $this->addBillingData($data);
@@ -65,8 +113,14 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
         // Try trackData first.
 
         $creditCard = $this->getCard();
+        $check = $this->getCheck();
 
-        if (($track1 = $creditCard->getTrack1())
+        if ($this->getTender()=== 'A'){
+            $this->validate('check');
+            $check = $this->getCheck();
+            $check->validate();
+
+        }elseif (($track1 = $creditCard->getTrack1())
             && ($track2 = $creditCard->getTrack2())
         ) {
             $data
