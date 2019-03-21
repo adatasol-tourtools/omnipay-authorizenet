@@ -33,21 +33,7 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
         parent::initialize(array_merge(['tender'=>'C'], $parameters));
         return $this;
     }
-    
-    public function getTender()
-    {
-        return $this->getParameter('tender');
-    }
-    
-    public function setTender($value)
-    {
-        if ($this->getCard() == null){
-           $this->setParameter('tender', 'A');
-        } else {
-           $this->setParameter('tender', 'C');
-        }  
-    }
-     
+
     /**
      * Get the check.
      *
@@ -79,7 +65,6 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
         $this->validate('amount');
         $data = $this->getBaseData();
         $data->transactionRequest->amount = $this->getAmount();
-        $data->$this->getTender();
         $this->addPayment($data);
         $this->addSolutionId($data);
         $this->addBillingData($data);
@@ -115,12 +100,36 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
         $creditCard = $this->getCard();
         $check = $this->getCheck();
 
-        if ($this->getTender()=== 'A'){
+        if ($this->getCheck()){
             $this->validate('check');
             $check = $this->getCheck();
             $check->validate();
-
-        }elseif (($track1 = $creditCard->getTrack1())
+            $data
+                ->transactionRequest
+                ->payment
+                ->bankAccount
+                ->accountType = $check->getAccountType();
+            $data
+                ->transactionRequest
+                ->payment
+                ->bankAccount
+                ->routingNumber = $check->getRoutingNumber();
+            $data
+                ->transactionRequest
+                ->payment
+                ->bankAccount
+                ->accountNumber = $check->getNumber();
+            $data
+                ->transactionRequest
+                ->payment
+                ->bankAccount
+                ->nameOnAccount = $check->getName();
+            $data
+                ->transactionRequest
+                ->payment
+                ->bankAccount
+                ->echeckType = "WEB";
+        }elseif ($this->getCard() && ($track1 = $creditCard->getTrack1())
             && ($track2 = $creditCard->getTrack2())
         ) {
             $data
@@ -134,7 +143,7 @@ class AIMAuthorizeRequest extends AIMAbstractRequest
                 ->payment
                 ->trackData
                 ->track2 = $track2;
-        } else {
+        } elseif($this->getCard()) {
             // Validate the standard credit card number.
             $this->validate('card');
 

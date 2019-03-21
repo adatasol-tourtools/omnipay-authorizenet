@@ -5,6 +5,7 @@ namespace Omnipay\AuthorizeNet\Message;
 use Omnipay\AuthorizeNet\Model\CardReference;
 use Omnipay\AuthorizeNet\Model\TransactionReference;
 use Omnipay\Common\CreditCard;
+use Omnipay\AuthorizeNet\Check;
 use Omnipay\Common\Exception\InvalidRequestException;
 use Omnipay\Common\Message\AbstractRequest;
 
@@ -340,6 +341,21 @@ abstract class AIMAbstractRequest extends AbstractRequest
             $req->shipTo->state = $card->getShippingState();
             $req->shipTo->zip = $card->getShippingPostcode();
             $req->shipTo->country = $card->getShippingCountry();
+        }
+        
+        /** @var Check $check */
+        $check = $this->getCheck();
+        if ($this->getCheck()) {
+            $req->customer->email = $check->getEmail();
+            $req->billTo->firstName = $check->getBillingFirstName();
+            $req->billTo->lastName = $check->getBillingLastName();
+            $req->billTo->company = $check->getBillingCompany();
+            $req->billTo->address = trim($check->getBillingAddress1() . " \n" . $check->getBillingAddress2());
+            $req->billTo->city = $check->getBillingCity();
+            $req->billTo->state = $check->getBillingState();
+            $req->billTo->zip = $check->getBillingPostcode();
+            $req->billTo->country = $check->getBillingCountry();
+            $req->billTo->phoneNumber = $check->getBillingPhone();
         }
 
         return $data;
